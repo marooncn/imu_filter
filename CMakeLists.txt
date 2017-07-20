@@ -16,6 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
 
 generate_dynamic_reconfigure_options(
   cfg/MyStuff.cfg
+  cfg/MyStuff2.cfg 
 )
 
 
@@ -31,19 +32,16 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-## Add cmake target dependencies of the library
-## as an example, code may need to be generated before libraries
-## either from message generation or dynamic reconfigure
-# add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-## Declare a C++ executable
-## With catkin_make all packages are built within a single CMake context
-## The recommended prefix ensures that target names across packages don't collide
 
 
 add_executable(Mahony_filter src/Mahony_filter.cpp)
 add_dependencies(Mahony_filter ${PROJECT_NAME}_gencfg)
 target_link_libraries(Mahony_filter ${catkin_LIBRARIES} )
 
+
+add_executable(Madgwick_filter src/Madgwick_filter.cpp)
+add_dependencies(Madgwick_filter ${PROJECT_NAME}_gencfg)
+target_link_libraries(Madgwick_filter ${catkin_LIBRARIES} )
 
 
