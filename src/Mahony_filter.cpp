@@ -17,7 +17,7 @@
 
 
 using namespace std_msgs;
-#define dt 0.0025
+#define sampleFreq 400.0f
 
 geometry_msgs::QuaternionStamped q;
 geometry_msgs::Vector3Stamped v;
@@ -29,11 +29,12 @@ float ex_int=0.0, ey_int=0.0, ez_int=0.0;
 Header header;
 float ax, ay, az, gx, gy, gz;
 ros::Duration dtime;
-// float dt;
+float dt = 1.0/sampleFreq;
 
 
 float invSqrt(float );
 void qua2Euler(geometry_msgs::QuaternionStamped );
+void MahonyAHRSupdateIMU(float gx, float gy, float gz, float ax, float ay, float az);
 
 void callback(filter::MyStuffConfig &config, uint32_t level) {
   twoKp = config.twoKp;
@@ -46,12 +47,7 @@ void callback(filter::MyStuffConfig &config, uint32_t level) {
 //reference: http://x-io.co.uk/open-source-imu-and-ahrs-algorithms/
 void filter_function(const sensor_msgs::Imu& msg)
 {
-  ros::Time start_time = ros::Time::now();
-  long double norm;
-  float halfvx, halfvy, halfvz;
-  float halfex, halfey, halfez;
-  float thetax, thetay, thetaz;
-  float dq0, dq1, dq2, dq3;
+ // ros::Time start_time = ros::Time::now();
 
   header = msg.header;
 //  q.linear_acceleration = msg.linear_acceleration;
@@ -89,14 +85,121 @@ void filter_function(const sensor_msgs::Imu& msg)
 
   ROS_INFO("The original gx=%f, gy=%f, gz=%f ", gx, gy, gz);
   
+  MahonyAHRSupdateIMU(gx, gy, gz, ax, ay, az);
+ 
+  q.header = header;
+  q.quaternion.w = q0;
+  q.quaternion.x = q1;
+  q.quaternion.y = q2;
+  q.quaternion.z = q3;
+
+  ROS_INFO(" q0=%f, q1=%f, q2=%f, q3=%f ", q0, q1, q2, q3);
+  qua2Euler(q); 
+ //  ros::Time end_time = ros::Time::now();
+//  double interval_time = (end_time - start_time).toNSec();
+ // ROS_INFO("the  interval time is %lf ns" , interval_time);
+}
+
   
-  // Compute feedback only if accelerometer measurement valid (avoids NaN in accelerometer normalisation)
+int main(int argc, char **argv)
+{
+  ros::init(argc, argv, "Mahony_filter");
+  ros::NodeHandle n;
+  ros::Publisher pub1 = n.advertise<geometry_msgs::QuaternionStamped>("quaternion", 1);
+  ros::Publisher pub2 = n.advertise<geometry_msgs::Vector3Stamped>("ypr", 1);
+ // ros::Publisher odom_pub = n.advertise<nav_msgs::Odometry>("odom", 50);
+  tf::TransformBroadcaster q_broadcaster;
+  //ros::Publisher pub3 = n.advertise<std_msgs::Float64MultiArray>("DCM",20);
+  //setFullSacleGyroRange(ICM20602_GYRO_RANGE_1000);
+  ros::Subscriber sub = n.subscribe("imu0", 10, filter_function);
+
+  dynamic_reconfigure::Server<filter::MyStuffConfig> server;
+  dynamic_reconfigure::Server<filter::MyStuffConfig>::CallbackType f;
+  f = boost::bind(&callback, _1, _2);
+  server.setCallback(f);
+
+  ros::Rate r(sampleFreq);
+  while(ros::ok())
+  {
+    pub1.publish(q);
+    pub2.publish(v);
+    ros::spinOnce();
+   
+    q_trans.header.stamp = header.stamp;
+  q_trans.header.frame_id = "/world";
+  q_trans.child_frame_id = "/odom";
+/*  q_trans.transform.rotation.w = q.quaternion.w;
+  q_trans.transform.rotation.x = q.quaternion.x;
+  q_trans.transform.rotation.y = q.quaternion.y;
+  q_trans.transform.rotation.z = q.quaternion.z; */
+  q_trans.transform.rotation = tf::createQuaternionMsgFromRollPitchYaw(v.vector.z ,v.vector.y, v.vector.x);
+
+  q_broadcaster.sendTransform(q_trans);
+  r.sleep();
+  }
+  return 0;
+}
+
+//Fast inverse square root
+//reference: https://en.wikipedia.org/wiki/Fast_inverse_square_root
+float invSqrt(float x)
+{
+  float xhalf = 0.5f * x;
+  union
+  {
+    float x;
+    int i;
+  } u;
+  u.x = x;
+  u.i = 0x5f3759df - (u.i >> 1);
+  /* The next line can be repeated any number of times to increase accuracy */
+  u.x = u.x * (1.5f - xhalf * u.x * u.x);
+  return u.x;
+}
+
+//reference: https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
+void qua2Euler(geometry_msgs::QuaternionStamped q) {
+
+  float x,y,z,w;
+  
+  x = q.quaternion.x;
+  y = q.quaternion.y;
+  z = q.quaternion.z;
+  w = q.quaternion.w;
+
+  v.header = q.header;
+
+//yaw (z-axis rotation)
+  float t0 = 2.0*(w*z+x*y);
+  float t1 = 1.0-2.0*(y*y+z*z);
+  v.vector.x = atan2(t0,t1)*57.29578; //the unit is degree
+//pitch (y-axis rotation)
+  float t2 = 2.0*(w*y-z*x);
+  t2 = (t2 > 1.0) ? 1.0 : t2;
+  t2 = (t2 < -1.0)? -1.0 : t2;
+  v.vector.y = asin(t2)*57.29578;  
+//roll (x-axis rotation)
+  float t3 = 2.0*(w*x+y*z);
+  float t4 = 1.0-2.0*(x*x+y*y);
+  v.vector.z = atan2(t3, t4)*57.29578;
+
+} 
+
+void MahonyAHRSupdateIMU(float gx, float gy, float gz, float ax, float ay, float az) {
+
+  float recipNorm; 
+  float halfvx, halfvy, halfvz;
+  float halfex, halfey, halfez;
+  float thetax, thetay, thetaz;
+  float dq0, dq1, dq2, dq3;
+
+   // Compute feedback only if accelerometer measurement valid (avoids NaN in accelerometer normalisation)
 if(!((ax == 0.0f) && (ay == 0.0f) && (az == 0.0f))) {
   //normalize the accelerometer vector
-  norm = invSqrt(ax*ax+ay*ay+az*az);
-  ax *= norm;
-  ay *= norm;
-  az *= norm;  
+  recipNorm = invSqrt(ax*ax+ay*ay+az*az);
+  ax *= recipNorm;
+  ay *= recipNorm;
+  az *= recipNorm;  
 
   ROS_INFO(" ax=%f, ay=%f, az=%f ", ax, ay, az);
 
@@ -161,114 +264,10 @@ if(!((ax == 0.0f) && (ay == 0.0f) && (az == 0.0f))) {
   q3 += dq3;
 
   //normalize quaternion
-  norm = invSqrt(q0*q0+q1*q1+q2*q2+q3*q3);
-  q0 *= norm;
-  q1 *= norm;
-  q2 *= norm;
-  q3 *= norm; 
+  recipNorm = invSqrt(q0*q0+q1*q1+q2*q2+q3*q3);
+  q0 *= recipNorm;
+  q1 *= recipNorm;
+  q2 *= recipNorm;
+  q3 *= recipNorm; 
 
-
-  q.header = header;
-  q.quaternion.w = q0;
-  q.quaternion.x = q1;
-  q.quaternion.y = q2;
-  q.quaternion.z = q3;
-
-  ROS_INFO(" q0=%f, q1=%f, q2=%f, q3=%f ", q0, q1, q2, q3);
-  qua2Euler(q); 
-  ros::Time end_time = ros::Time::now();
-  double interval_time = (end_time - start_time).toNSec();
- // ROS_INFO("the  interval time is %lf ns" , interval_time);
 }
-
-  
-int main(int argc, char **argv)
-{
-  ros::init(argc, argv, "Mahony_filter");
-  ros::NodeHandle n;
-  ros::Publisher pub1 = n.advertise<geometry_msgs::QuaternionStamped>("quaternion", 1);
-  ros::Publisher pub2 = n.advertise<geometry_msgs::Vector3Stamped>("ypr", 1);
- // ros::Publisher odom_pub = n.advertise<nav_msgs::Odometry>("odom", 50);
-  tf::TransformBroadcaster q_broadcaster;
-  //ros::Publisher pub3 = n.advertise<std_msgs::Float64MultiArray>("DCM",20);
-  //setFullSacleGyroRange(ICM20602_GYRO_RANGE_1000);
-  ros::Subscriber sub = n.subscribe("imu0", 10, filter_function);
-
-  dynamic_reconfigure::Server<filter::MyStuffConfig> server;
-  dynamic_reconfigure::Server<filter::MyStuffConfig>::CallbackType f;
-  f = boost::bind(&callback, _1, _2);
-  server.setCallback(f);
-
-  ros::Rate r(400);
-  while(ros::ok())
-  {
-    pub1.publish(q);
-    pub2.publish(v);
-    ros::spinOnce();
-   
-    q_trans.header.stamp = header.stamp;
-  q_trans.header.frame_id = "/odom";
-  q_trans.child_frame_id = "imu/data";
-/*  q_trans.transform.rotation.w = q.quaternion.w;
-  q_trans.transform.rotation.x = q.quaternion.x;
-  q_trans.transform.rotation.y = q.quaternion.y;
-  q_trans.transform.rotation.z = q.quaternion.z; */
-  q_trans.transform.rotation = tf::createQuaternionMsgFromRollPitchYaw(v.vector.z ,v.vector.y, v.vector.x);
-
-  q_broadcaster.sendTransform(q_trans);
-  r.sleep();
-  }
-  return 0;
-}
-
-//Fast inverse square root
-//reference: https://en.wikipedia.org/wiki/Fast_inverse_square_root
-float invSqrt(float x)
-{
-  float xhalf = 0.5f * x;
-  union
-  {
-    float x;
-    int i;
-  } u;
-  u.x = x;
-  u.i = 0x5f3759df - (u.i >> 1);
-  /* The next line can be repeated any number of times to increase accuracy */
-  u.x = u.x * (1.5f - xhalf * u.x * u.x);
-  return u.x;
-}
-
-//reference: https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
-void qua2Euler(geometry_msgs::QuaternionStamped q) {
-
-  float x,y,z,w;
-  
-  x = q.quaternion.x;
-  y = q.quaternion.y;
-  z = q.quaternion.z;
-  w = q.quaternion.w;
-
-  v.header = q.header;
-
-//yaw (z-axis rotation)
-  float t0 = 2.0*(w*z+x*y);
-  float t1 = 1.0-2.0*(y*y+z*z);
-  v.vector.x = atan2(t0,t1)*57.29578; //the unit is degree
-//pitch (y-axis rotation)
-  float t2 = 2.0*(w*y-z*x);
-  t2 = (t2 > 1.0) ? 1.0 : t2;
-  t2 = (t2 < -1.0)? -1.0 : t2;
-  v.vector.y = asin(t2)*57.29578;  
-//roll (x-axis rotation)
-  float t3 = 2.0*(w*x+y*z);
-  float t4 = 1.0-2.0*(x*x+y*y);
-  v.vector.z = atan2(t3, t4)*57.29578;
-
-} 
-
-
-
-
-  
-   
-
