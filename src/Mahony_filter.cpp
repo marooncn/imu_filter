@@ -185,6 +185,8 @@ void qua2Euler(geometry_msgs::QuaternionStamped q) {
 
 } 
 
+//reference: http://blog.sina.com.cn/s/blog_578925940101gg11.html
+//reference: http://www.bspilot.com/?p=121
 void MahonyAHRSupdateIMU(float gx, float gy, float gz, float ax, float ay, float az) {
 
   float recipNorm; 
