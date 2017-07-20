@@ -13,7 +13,7 @@ ypr(geometry_msgs/Vector3Stamped)
 
     The fused pose representation.
 # Parameters
-Dynamically Reconfigurable Parameters 
+Dynamically Reconfigurable Parameters</br>
 (Mahony_filter)  twoKp, twoKi</br>
 (Madgwick_filter) beta  
 After run the node, you can input "rosrun rqt_configure rqt_reconfigure" to tune the dynamic parameters.</br>
