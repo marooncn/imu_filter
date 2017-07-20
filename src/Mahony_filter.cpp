@@ -17,19 +17,19 @@
 
 
 using namespace std_msgs;
-#define sampleFreq 400.0f
 
 geometry_msgs::QuaternionStamped q;
 geometry_msgs::Vector3Stamped v;
 geometry_msgs::TransformStamped q_trans;
 double twoKp;  //2* accelerometer proportional gain
 double twoKi;  //2* integral gain
-double q0=1.0, q1=0.0, q2=0.0, q3=0.0;
+float sampleFreq;
+float q0=1.0, q1=0.0, q2=0.0, q3=0.0;
 float ex_int=0.0, ey_int=0.0, ez_int=0.0;
 Header header;
 float ax, ay, az, gx, gy, gz;
 ros::Duration dtime;
-float dt = 1.0/sampleFreq;
+float dt;
 
 
 float invSqrt(float );
@@ -112,6 +112,9 @@ int main(int argc, char **argv)
   //ros::Publisher pub3 = n.advertise<std_msgs::Float64MultiArray>("DCM",20);
   //setFullSacleGyroRange(ICM20602_GYRO_RANGE_1000);
   ros::Subscriber sub = n.subscribe("imu0", 10, filter_function);
+  if(!n.getParam("sampleFreq", sampleFreq))
+    sampleFreq = 400.0;
+  dt = 1.0/sampleFreq;
 
   dynamic_reconfigure::Server<filter::MyStuffConfig> server;
   dynamic_reconfigure::Server<filter::MyStuffConfig>::CallbackType f;
@@ -126,8 +129,8 @@ int main(int argc, char **argv)
     ros::spinOnce();
    
     q_trans.header.stamp = header.stamp;
-  q_trans.header.frame_id = "/world";
-  q_trans.child_frame_id = "/odom";
+    q_trans.header.frame_id = "/odom";
+    q_trans.child_frame_id = "/imu";
 /*  q_trans.transform.rotation.w = q.quaternion.w;
   q_trans.transform.rotation.x = q.quaternion.x;
   q_trans.transform.rotation.y = q.quaternion.y;
@@ -185,8 +188,6 @@ void qua2Euler(geometry_msgs::QuaternionStamped q) {
 
 } 
 
-//reference: http://blog.sina.com.cn/s/blog_578925940101gg11.html
-//reference: http://www.bspilot.com/?p=121
 void MahonyAHRSupdateIMU(float gx, float gy, float gz, float ax, float ay, float az) {
 
   float recipNorm; 
@@ -273,3 +274,5 @@ if(!((ax == 0.0f) && (ay == 0.0f) && (az == 0.0f))) {
   q3 *= recipNorm; 
 
 }
+
+
