@@ -18,13 +18,14 @@ Dynamically Reconfigurable Parameters</br>
 (Madgwick_filter) beta  
 
     After run the node, you can input "rosrun rqt_configure rqt_reconfigure" to tune the dynamic parameters.
-    According to Madgwick's thesis, the suggested beta = sqrt(3.0f / 4.0f) * gyroMeasError. ICM20602's  gyroscope sensitivity erroris ±1%. Thus the default beta is setting to 0.1088. As the specific application, the value can be tuned accoring to response and requriments.</br>
+    According to Madgwick's thesis, the suggested beta = sqrt(3.0f / 4.0f) * gyroMeasError. ICM20602's gyroscope</br> sensitivity erroris ±1%. Thus the default beta is setting to 0.1088. As the specific application, the value</br> can be tuned accoring to response and requriments.
 Not Dynamically Reconfigurable Parameters </br>
 sampleFreq(float, default: 400.0)</br>
 Such as: rosrun filter Madgwick_filter _sampleFreq:=200
 # provied tf Transforms
-odom -> imu</br>
-So you can open rviz and set the fixed frame "odom", add TF then you can use it to verify the effect directly.</br>
+odom -> imu  
+
+    So you can open rviz and set the fixed frame "odom", add TF then you can use it to verify the effect directly.</br>
 # Result
 The Madgwick_filter node's effect is acceptable, but the Mahony_filter is disappointing.
 
