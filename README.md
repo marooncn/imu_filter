@@ -1,6 +1,6 @@
 # imu_filter
 
-This is a project that uses IMU filter algorithm in ROS(Robot Operating System). The IMU i use is ICM 20602, consisting of a tri-axis gyroscope and a tri-axis accelerometer.
+This is a project that uses IMU filter algorithm in ROS(Robot Operating System). The IMU I use is ICM 20602, consisting of a tri-axis gyroscope and a tri-axis accelerometer.
 
 # ROS API
 # Subscribed Topics
