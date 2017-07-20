@@ -20,9 +20,9 @@ using namespace std_msgs;
 geometry_msgs::QuaternionStamped q;
 geometry_msgs::Vector3Stamped v;
 geometry_msgs::TransformStamped q_trans;
-#define sampleFreq 400.0f
+float sampleFreq;
 double beta; 
-double q0=1.0, q1=0.0, q2=0.0, q3=0.0;
+float q0=1.0, q1=0.0, q2=0.0, q3=0.0;
 Header header;
 float ax, ay, az, gx, gy, gz;
 ros::Duration dtime;
@@ -40,12 +40,8 @@ void callback(filter::MyStuff2Config &config, uint32_t level) {
 
 void filter_function(const sensor_msgs::Imu& msg)
 {
-  ros::Time start_time = ros::Time::now();
-  long double norm;
-  float halfvx, halfvy, halfvz;
-  float halfex, halfey, halfez;
-  float thetax, thetay, thetaz;
-  float dq0, dq1, dq2, dq3;
+//  ros::Time start_time = ros::Time::now();
+
 
   header = msg.header;
 //  q.linear_acceleration = msg.linear_acceleration;
@@ -94,8 +90,8 @@ void filter_function(const sensor_msgs::Imu& msg)
 
   ROS_INFO(" q0=%f, q1=%f, q2=%f, q3=%f ", q0, q1, q2, q3);
   qua2Euler(q);
-  ros::Time end_time = ros::Time::now();
-  double interval_time = (end_time - start_time).toNSec();
+//  ros::Time end_time = ros::Time::now();
+//  double interval_time = (end_time - start_time).toNSec();
  // ROS_INFO("the  interval time is %lf ns" , interval_time);
 }
 
@@ -108,7 +104,8 @@ int main(int argc, char **argv)
   ros::Publisher pub2 = n.advertise<geometry_msgs::Vector3Stamped>("ypr", 1);
   tf::TransformBroadcaster q_broadcaster;
   ros::Subscriber sub = n.subscribe("imu0", 10, filter_function);
-
+  if(!n.getParam("sampleFreq", sampleFreq))
+    sampleFreq = 400.0;
   dynamic_reconfigure::Server<filter::MyStuff2Config> server;
   dynamic_reconfigure::Server<filter::MyStuff2Config>::CallbackType f;
   f = boost::bind(&callback, _1, _2);
