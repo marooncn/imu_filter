@@ -4,8 +4,9 @@ This is a project that uses IMU filter algorithm in ROS(Robot Operating System).
 
 # ROS API
 # Subscribed Topics
-imu0(sensor_msgs/Imu)＜/br＞
-    Message containing raw IMU data, including angular velocities and linear accelerations. ＜/br＞
+imu0(sensor_msgs/Imu)＜/br＞   
+
+    Message containing raw IMU data, including angular velocities and linear accelerations. ＜/br＞   
 # Published Topics
 quaternion(geometry_msg/QuaternionStamped)＜/br＞
 ypr(geometry_msgs/Vector3Stamped)＜/br＞
