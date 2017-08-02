@@ -44,4 +44,8 @@ add_executable(Madgwick_filter src/Madgwick_filter.cpp)
 add_dependencies(Madgwick_filter ${PROJECT_NAME}_gencfg)
 target_link_libraries(Madgwick_filter ${catkin_LIBRARIES} )
 
+add_executable(bias_calculator src/bias_calculator.cpp)
+add_dependencies(bias_calculator ${PROJECT_NAME}_gencfg)
+target_link_libraries(bias_calculator ${catkin_LIBRARIES} )
+
 
