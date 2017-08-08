@@ -17,14 +17,14 @@ int main(int argc, char** argv) {
   ros::init(argc, argv, "bias_calculator");
   ROS_INFO("Please keep your IMU still for 10 secs");
   ros::NodeHandle n;
-  ros::Subscriber sub = n.subscribe("imu0", 100, calculator);
+  ros::Subscriber sub = n.subscribe("imu0", 1000, calculator);
   ros::Publisher pub = n.advertise< geometry_msgs::Vector3>("bias", 1);
 
   while(ros::ok()) {
     for(int i=0; i<10; i++)
        {ros::Duration(1).sleep();
-        ROS_INFO("%ds left", 10-i); }
-    ros::spinOnce();
+        ROS_INFO("%ds left", 10-i); 
+    ros::spinOnce(); }
     if(count==0)
        { ROS_WARN("can't receive imu0 data. Please try again.");
         break; }
