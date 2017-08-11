@@ -25,7 +25,7 @@ int main(int argc, char** argv) {
        {ros::Duration(1).sleep();
         ROS_INFO("%ds left", 10-i); 
     ros::spinOnce(); }
-    if(count==0)
+    if(count == 0)
        { ROS_WARN("can't receive imu0 data. Please try again.");
         break; }
     v.x = x /count;
@@ -33,7 +33,7 @@ int main(int argc, char** argv) {
     v.z = z /count;
     pub.publish(v);
     ROS_INFO("Calculate ends."); 
-    ROS_INFO("gyro's x axis initial data offest is %f, y is %f, z is %f", v.x, v.y, v.z);
+    ROS_INFO("gyro's initial data offest is %f, y is %f, z is %f", v.x, v.y, v.z);
     break;
   }
 }
