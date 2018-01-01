@@ -193,7 +193,7 @@ void MahonyAHRSupdateIMU(float gx, float gy, float gz, float ax, float ay, float
   float recipNorm; 
   float halfvx, halfvy, halfvz;
   float halfex, halfey, halfez;
-  float thetax, thetay, thetaz;
+   float thetax, thetay, thetaz;
   float dq0, dq1, dq2, dq3;
 
    // Compute feedback only if accelerometer measurement valid (avoids NaN in accelerometer normalisation)
@@ -254,8 +254,8 @@ if(!((ax == 0.0f) && (ay == 0.0f) && (az == 0.0f))) {
   thetay = 0.5*gy*dt;
   thetaz = 0.5*gz*dt;
 
-  //update quaternion
-  //Runge Kutta algorithms.
+  //update quaternion using Runge Kutta algorithms.
+  //explanation: http://blog.csdn.net/aasdsadad/article/details/73080832
   dq0 = -q1*thetax-q2*thetay-q3*thetaz;
   dq1 = q0*thetax+q2*thetaz-q3*thetay;
   dq2 = q0*thetay-q1*thetaz+q3*thetax;
