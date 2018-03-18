@@ -14,15 +14,15 @@ ypr(geometry_msgs/Vector3Stamped)
     The fused pose representation.
 ## Parameters
 ### Dynamically Reconfigurable Parameters</br>
-(Mahony_filter)  twoKp, twoKi</br>
-(Madgwick_filter) beta  
+(Mahony_filter)  `twoKp` `twoKi`</br>
+(Madgwick_filter) `beta`  
 
     After runnig the node, you can input "rosrun rqt_configure rqt_reconfigure" to tune the dynamic parameters.
     According to Madgwick's thesis, the suggested beta = sqrt(3.0f / 4.0f) * gyroMeasError. 
     ICM20602's gyroscope sensitivity erroris ±1%. Thus the default beta is setting to 0.1088.
     As the specific application, the value can be tuned accoring to response and requriments.
 ### Non-dynamically Reconfigurable Parameters </br>
-sampleFreq(float, default: 400.0)</br>
+`sampleFreq`(float, default: 400.0)</br>
 You can change its value at the beginning, Such as: 
           
     rosrun filter Madgwick_filter _sampleFreq:=200
